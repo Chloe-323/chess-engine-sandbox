@@ -16,20 +16,8 @@ class Engine:
 
     def evaluate(self, cur_depth: int = 0) -> float:
         """Return a score for the current board position. Checkmate for white is +inf, checkmate for black is -inf."""
-        if self.board.is_game_over():
-            if self.board.is_checkmate():
-                return -100000 if self.board.turn else 100000
-            if self.board.is_stalemate():
-                return 0
-            if self.board.is_insufficient_material():
-                return 0
-            if self.board.is_seventyfive_moves():
-                return 0
-            if self.board.is_fivefold_repetition():
-                return 0
-            return 0
-        if cur_depth == self.depth:
-            return self.count_relative_material() + (random.random() / 100)
+        if self.board.is_game_over() or cur_depth == self.depth:
+            return self.constant_time_evaluate()
         
         return self.best_move_for_current_player(cur_depth)[1]
 
@@ -44,6 +32,21 @@ class Engine:
         else:
             return min(queue, key=lambda x: x[1])
  
+    def constant_time_evaluate(self):
+        if self.board.is_game_over():
+            if self.board.is_checkmate():
+                return -100000 if self.board.turn else 100000
+            if self.board.is_stalemate():
+                return 0
+            if self.board.is_insufficient_material():
+                return 0
+            if self.board.is_seventyfive_moves():
+                return 0
+            if self.board.is_fivefold_repetition():
+                return 0
+            return 0
+        return self.count_relative_material() + (random.random() / 100)
+    
     def count_relative_material(self):
         difference = 0
         total_material = 0

@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Pygame
+*.pygame
+
+# Local development settings
+.env
+.env.local
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# Project specific
+images/*.png
+images/*.svg
+!images/README.md  # Keep the README in the images directory
