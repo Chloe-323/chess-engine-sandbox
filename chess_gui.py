@@ -55,6 +55,54 @@ def draw_board(screen):
             pygame.draw.rect(screen, color, 
                            (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
 
+def draw_game_over_overlay(screen, board):
+    """Draw a semi-transparent overlay and game over text."""
+    # Create a semi-transparent overlay
+    overlay = pygame.Surface((WINDOW_SIZE, WINDOW_SIZE), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 128))  # Black with 50% opacity
+    screen.blit(overlay, (0, 0))
+    
+    # Determine game result
+    if board.is_checkmate():
+        winner = "Black" if board.turn == chess.WHITE else "White"
+        result_text = f"Checkmate! {winner} wins!"
+    elif board.is_stalemate():
+        result_text = "Stalemate!"
+    elif board.is_insufficient_material():
+        result_text = "Draw by insufficient material"
+    elif board.is_fifty_moves():
+        result_text = "Draw by fifty-move rule"
+    elif board.is_repetition():
+        result_text = "Draw by repetition"
+    else:
+        result_text = "Game Over"
+    
+    # Set up font
+    font = pygame.font.Font(None, 48)
+    text = font.render(result_text, True, WHITE)
+    text_rect = text.get_rect(center=(WINDOW_SIZE // 2, WINDOW_SIZE // 2))
+    
+    # Draw text with outline for better visibility
+    outline_surface = font.render(result_text, True, BLACK)
+    outline_rect = text_rect.copy()
+    for offset in [(-2, -2), (2, -2), (-2, 2), (2, 2)]:
+        screen.blit(outline_surface, outline_rect.move(offset))
+    
+    screen.blit(text, text_rect)
+    
+    # Add instruction text
+    small_font = pygame.font.Font(None, 32)
+    instruction = "Click anywhere to start a new game"
+    instr_text = small_font.render(instruction, True, WHITE)
+    instr_rect = instr_text.get_rect(center=(WINDOW_SIZE // 2, WINDOW_SIZE // 2 + 50))
+    
+    # Draw instruction text with outline
+    outline_instr = small_font.render(instruction, True, BLACK)
+    for offset in [(-1, -1), (1, -1), (-1, 1), (1, 1)]:
+        screen.blit(outline_instr, instr_rect.move(offset))
+    
+    screen.blit(instr_text, instr_rect)
+
 def draw_pieces(screen, board, flipped=False):
     """Draw the chess pieces on the board, accounting for board flip."""
     for square in chess.SQUARES:
@@ -161,17 +209,25 @@ def main():
         """Check if it's the AI's turn to move."""
         # If board is not flipped, AI plays black. If flipped, AI plays white.
         return (not board_flipped and not board.turn) or (board_flipped and board.turn)
+    
+    def print_game_info():
+        print("=======")
+        print(f"Material: {engine.count_material()}")
+        print(f"Turn: {"White" if board.turn else "Black"}")
+        print(f"Eval: {engine.evaluate()}")
+        print("=======")
 
     while running:
         # Check if it's AI's turn
         if is_ai_turn() and not board.is_game_over():
             # Get AI move
-            legal_moves = list(board.legal_moves)
-            if legal_moves:  # Ensure there are legal moves
-                ai_move = engine.pick_move(board.turn, legal_moves)
-                if ai_move in legal_moves:  # Double check the move is legal
+            if board.legal_moves:  # Ensure there are legal moves
+                ai_move = engine.pick_move()
+                if ai_move in board.legal_moves:  # Double check the move is legal
                     board.push(ai_move)
                     last_move = (ai_move.from_square, ai_move.to_square)
+                    print_game_info()
+
         
         # Handle events
         for event in pygame.event.get():
@@ -185,6 +241,15 @@ def main():
             
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left mouse button
+                    # If game is over, reset the game on any click
+                    if board.is_game_over():
+                        board = chess.Board()
+                        selected_square = None
+                        valid_moves = []
+                        last_move = None
+                        engine = Engine(board)  # Reset the engine with the new board
+                        continue
+                        
                     square = get_square_from_pos(event.pos, board_flipped)
                     
                     if square is not None:
@@ -207,6 +272,7 @@ def main():
                                 
                                 if move in board.legal_moves:
                                     board.push(move)
+                                    print_game_info()
                                     last_move = (selected_square, square)  # Update last move
 
                                 selected_square = None
@@ -243,6 +309,10 @@ def main():
         
         # Draw pieces
         draw_pieces(screen, board, board_flipped)
+        
+        # Draw game over overlay if the game is over
+        if board.is_game_over():
+            draw_game_over_overlay(screen, board)
         
         # Update the display
         pygame.display.flip()
