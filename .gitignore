@@ -47,6 +47,3 @@ ENV/
 
 # Project specific
 images/
-# Keep the chess piece images in the repository
-# but ignore other image files that might be added later
-images/chess_spritesheet.svg
