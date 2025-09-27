@@ -44,7 +44,6 @@ class Engine:
         else:
             return min(queue, key=lambda x: x[1])
  
-
     def count_relative_material(self):
         difference = 0
         total_material = 0
