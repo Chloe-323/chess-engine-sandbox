@@ -181,23 +181,34 @@ def get_square_from_pos(pos, flipped=False):
     
     file = x // SQUARE_SIZE
     rank = 7 - (y // SQUARE_SIZE)  # Convert y-coordinate to rank (0-7)
-    
     if flipped:
         file = 7 - file
         rank = 7 - rank
     return chess.square(file, rank)
 
-def main():
-    # Set up the display
+def main(fen_string=None):
+    # Initialize Pygame and create window
+    pygame.init()
     screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
-    pygame.display.set_caption('Chess (Ctrl+F to flip board)')
+    pygame.display.set_caption('Chess')
     clock = pygame.time.Clock()
+    
+    # Create chess board with optional FEN string
+    if fen_string:
+        try:
+            board = chess.Board(fen_string)
+            print(f"Loaded position from FEN: {fen_string}")
+        except ValueError as e:
+            print(f"Invalid FEN string: {e}")
+            print("Using default starting position")
+            board = chess.Board()
+    else:
+        board = chess.Board()
     
     # Load piece images
     load_images()
     
     # Initialize the chess board and game state
-    board = chess.Board()
     selected_square = None
     valid_moves = []
     last_move = None  # Track the last move made
@@ -212,9 +223,7 @@ def main():
     
     def print_game_info():
         print("=======")
-        print(f"Material: {engine.count_material()}")
         print(f"Turn: {"White" if board.turn else "Black"}")
-        print(f"Eval: {engine.evaluate()}")
         print("=======")
 
     while running:
@@ -321,4 +330,6 @@ def main():
     pygame.quit()
 
 if __name__ == "__main__":
-    main()
+    import sys
+    fen_string = sys.argv[1] if len(sys.argv) > 1 else None
+    main(fen_string)
