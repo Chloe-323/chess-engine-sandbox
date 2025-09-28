@@ -3,7 +3,7 @@
 A chess game featuring a Pygame-based graphical interface and a simple AI opponent. Built with Python and the `python-chess` library.
 
 ## Features
-- Play against an AI opponent or yourself (human vs human)
+- Play against an AI opponent
 - Simple but effective AI using minimax algorithm with material evaluation
 - Game over detection with visual feedback (checkmate, stalemate, draw conditions)
 - Legal move highlighting
@@ -70,23 +70,76 @@ If images are not found, the game will use simple geometric shapes as placeholde
 
 ## AI Implementation
 
-The current AI implementation uses a simple approach that:
-1. Explores all possible moves up to a specified depth (default is 3)
-2. Evaluates positions based on relative material balance
-3. Considers basic game end conditions (checkmate, stalemate, draws)
+The chess engine implements an advanced AI using:
+- Minimax algorithm with alpha-beta pruning for efficient search
+- Quiescence search to avoid horizon effects
+- Move ordering to improve pruning efficiency
+- Depth-limited search with configurable depth (default is 2)
 
-### Evaluation Function
-- Compares material values of pieces (Pawn=1, Knight/Bishop=3, Rook=5, Queen=9)
-- Detects immediate wins/losses (checkmate)
-- Handles draw conditions (stalemate, insufficient material, 50-move rule, threefold repetition)
+### Features
+- **Alpha-Beta Pruning**: Significantly reduces the number of positions evaluated
+- **Quiescence Search**: Extends search in volatile positions (captures and checks)
+- **Move Ordering**: Examines promising moves first to improve pruning
+- **Evaluation Function**:
+  - Material evaluation (Pawn=1, Knight/Bishop=3, Rook=5, Queen=9)
+  - Checkmate detection
+  - Draw detection (stalemate, insufficient material, 50-move rule, threefold repetition)
+  - Relative material advantage calculation
 
-You can adjust the AI's search depth in `chess_gui.py` by modifying the `depth` parameter when initializing the `Engine` class (default is 3). Higher depths will make the AI stronger but slower.
+### Configuration
+You can adjust the AI's behavior by modifying these parameters in `chess_engine.py`:
+- `depth`: Search depth (default: 2)
+- `debug`: Enable/disable debug output (default: False)
 
-### Future Improvements
-- Implement minimax algorithm with alpha-beta pruning
-- Add position evaluation beyond just material
-- Include piece-square tables for better piece placement
-- Add opening book support
+## Starting from Custom Positions
+
+You can start the game from any position using FEN (Forsyth–Edwards Notation):
+
+```bash
+python chess_gui.py "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2"
+```
+
+If no FEN string is provided, the game starts from the standard initial position.
+
+## Future Improvements
+- Optimize move ordering
+- Maintain an explored game tree to avoid redundant calculations
+- Add iterative deepening with time control
+- Implement more sophisticated evaluation features (piece-square tables, mobility, pawn structure)
+- Implement opening book
+- Add endgame tablebases
+
+## Game Logging
+
+The game automatically logs all moves to timestamped files in the `games/` directory. Each game is saved in a separate file with the following format:
+
+- **File Location**: `games/` directory in the project folder
+- **Filename Format**: `MM_DD_YYYY_HH_MM_SS_SSS.txt` (e.g., `09_28_2025_14_06_09_999.txt`)
+- **Log Format**: Standard Algebraic Notation (e.g., `1. e4 e5 2. Nf3 Nc6`)
+
+### Features:
+- Automatic creation of log files for each new game
+- Proper handling of move numbering and turn order
+- Clean separation of games into individual files
+- Human-readable move notation
+
+### Example Log File:
+```
+1. e4 e5
+2. Nf3 Nc6
+3. Bb5 a6
+4. Ba4 Nf6
+5. O-O Be7
+6. Re1 b5
+7. Bb3 d6
+8. c3 O-O
+```
+
+### Notes:
+- Logs are automatically created when you start a new game
+- Each move is logged immediately after it's made
+- The `games/` directory is automatically created if it doesn't exist
+- Log files are plain text and can be opened with any text editor
 
 ## Game Over Conditions
 The game detects several endgame conditions:

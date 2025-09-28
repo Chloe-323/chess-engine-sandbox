@@ -5,6 +5,7 @@ import io
 import chess
 import chess.svg
 from chess_engine import Engine
+from game_logger import GameLogger
 
 # Initialize pygame
 pygame.init()
@@ -214,6 +215,8 @@ def main(fen_string=None):
     last_move = None  # Track the last move made
     board_flipped = False  # Track if board is flipped
     engine = Engine(board)
+    logger = GameLogger()
+    logger.start_new_game()
     running = True
     
     def is_ai_turn():
@@ -233,6 +236,9 @@ def main(fen_string=None):
             if board.legal_moves:  # Ensure there are legal moves
                 ai_move = engine.pick_move()
                 if ai_move in board.legal_moves:  # Double check the move is legal
+                    # Log the AI move and update the board
+                    move_san = board.san(ai_move)
+                    logger.log_move(move_san, board.turn == chess.WHITE)
                     board.push(ai_move)
                     last_move = (ai_move.from_square, ai_move.to_square)
                     print_game_info()
@@ -252,11 +258,16 @@ def main(fen_string=None):
                 if event.button == 1:  # Left mouse button
                     # If game is over, reset the game on any click
                     if board.is_game_over():
+                        # End the current game log
+                        logger.end_game()
+                        
+                        # Reset the board and game state
                         board = chess.Board()
                         selected_square = None
                         valid_moves = []
                         last_move = None
                         engine = Engine(board)  # Reset the engine with the new board
+                        logger.start_new_game()  # Start a new game log
                         continue
                         
                     square = get_square_from_pos(event.pos, board_flipped)
@@ -280,7 +291,10 @@ def main(fen_string=None):
                                     move = chess.Move(selected_square, square, promotion=chess.QUEEN)
                                 
                                 if move in board.legal_moves:
+                                    # Log the move and update the board
+                                    move_san = board.san(move)
                                     board.push(move)
+                                    logger.log_move(move_san, board.turn == chess.BLACK)  # Log after pushing, so turn has changed
                                     print_game_info()
                                     last_move = (selected_square, square)  # Update last move
 
@@ -327,6 +341,8 @@ def main(fen_string=None):
         pygame.display.flip()
         clock.tick(FPS)
     
+    # Clean up the logger when closing the game
+    logger.end_game()
     pygame.quit()
 
 if __name__ == "__main__":
