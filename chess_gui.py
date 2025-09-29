@@ -347,5 +347,7 @@ def main(fen_string=None):
 
 if __name__ == "__main__":
     import sys
-    fen_string = sys.argv[1] if len(sys.argv) > 1 else None
+    fen_file = sys.argv[1] if len(sys.argv) > 1 else None
+    with open(fen_file, 'r') as f:
+        fen_string = f.read().strip()
     main(fen_string)

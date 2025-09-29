@@ -109,6 +109,12 @@ If no FEN string is provided, the game starts from the standard initial position
 - Implement opening book
 - Add endgame tablebases
 
+## Planned Approach
+*I will be doing three different "versions" of the chess engine.* 
+1. Version 1 only uses this textbook I found. I am not allowed to google anything or ask AI for help.
+2. Version 2 will still use rule-based approaches, but with full access to the internet. I plan to use it to look up opening book moves, and to get some ideas for evaluation functions. I will also look into what other chess engines to, and try to implement some of their approaches.
+3. Version 3 will use tensorflow to try to get a neural network to play chess.
+
 ## Game Logging
 
 The game automatically logs all moves to timestamped files in the `games/` directory. Each game is saved in a separate file with the following format:

@@ -2,16 +2,23 @@ import chess
 import random
 import heapq
 import copy
+import time
+from typing import Optional, Tuple
+from performance_logger import PerformanceLogger
 
 
 class Engine:
-    def __init__(self, board: chess.Board, depth: int = 5, beam_width: int = 12):
+    def __init__(self, board: chess.Board, depth: int = 5, beam_width: int = 12, debug: bool = False):
         self.board = board
         self.depth = depth
-        self.debug = True
+        self.debug = debug
         self.beam_width = beam_width
         self.explored = {}
         self.skips = 0
+        self.positions_evaluated = 0
+        self.alpha_prunes = 0
+        self.beta_prunes = 0
+        self.performance_logger = PerformanceLogger()
     
     def pick_move(self) -> chess.Move:
         """
@@ -22,9 +29,37 @@ class Engine:
         if self.debug:
             print("=======")
             print(f"Picking move for {"White" if self.board.turn else "Black"}")
+        
+        # Start performance logging
+        start_time = time.time()
+        
+        # Find the best move
         (value, move) = self.alpha_beta_search()
-        print(f"Explored: {len(self.explored)}, Skips: {self.skips}")
+        
+        # Calculate time taken
+        time_taken = (time.time() - start_time) * 1000  # Convert to milliseconds
+        
+        # Log the performance
+        if move is not None:
+            move_san = self.board.san(move)
+            self.performance_logger.log_move(
+                move_san=move_san,
+                depth=self.depth,
+                is_white=self.board.turn,
+                positions_evaluated=self.positions_evaluated,
+                positions_skipped=self.skips,
+                time_taken_ms=time_taken,
+                best_score=value,
+                alpha_prunes=self.alpha_prunes,
+                beta_prunes=self.beta_prunes,
+            )
+        self.positions_evaluated = 0
+        self.skips = 0
+        self.alpha_prunes = 0
+        self.beta_prunes = 0
+        
         if self.debug:
+            print(f"Explored: {self.positions_evaluated}, Skips: {self.skips}, Time: {time_taken:.2f}ms")
             print(f"Picked move {self.board.san(move)} with value {value}")
 
         return move
@@ -67,6 +102,7 @@ class Engine:
         for move in move_iter:
             if self.debug:
                 print(f"{'\t'*(cur_depth + 1)}Looking at {self.board.san(move)}")
+            self.positions_evaluated += 1
             self.board.push(move)
             if self.board.fen() in self.explored and self.explored[self.board.fen()][0] >= self.depth - cur_depth:
                 move_value = self.explored[self.board.fen()][1]
@@ -81,10 +117,22 @@ class Engine:
                 value = move_value
                 best_move = move
             if value >= beta:
+                self.beta_prunes += 1
                 if self.debug:
                     print(f"{'\t'*(cur_depth + 1)}Beta cut")
                 break
             alpha = max(alpha, value)
+            
+            # Update performance stats during search
+            if self.positions_evaluated % 1000 == 0 and cur_depth == 0:
+                self.performance_logger.update_stats(
+                    positions_evaluated=self.positions_evaluated,
+                    positions_skipped=self.skips,
+                    alpha_prunes=self.alpha_prunes,
+                    beta_prunes=self.beta_prunes,
+                    score=value
+                )
+                
         if value == -float('inf'):
             if self.debug:
                 print(f"{'\t'*(cur_depth + 1)}No moves at depth {cur_depth}, returning constant time evaluation")
@@ -111,6 +159,7 @@ class Engine:
         for move in move_iter:
             if self.debug:
                 print(f"{'\t'*(cur_depth + 1)}Looking at {self.board.san(move)}")
+            self.positions_evaluated += 1
             self.board.push(move)
             if self.board.fen() in self.explored and self.explored[self.board.fen()][0] >= self.depth - cur_depth:
                 move_value = self.explored[self.board.fen()][1]
@@ -125,10 +174,22 @@ class Engine:
                 value = move_value
                 best_move = move
             if value <= alpha:
+                self.alpha_prunes += 1
                 if self.debug:
                     print(f"{'\t'*(cur_depth + 1)}Alpha cut")
                 break
             beta = min(beta, value)
+            
+            # Update performance stats during search (only from root to reduce overhead)
+            if self.positions_evaluated % 1000 == 0 and cur_depth == 0:
+                self.performance_logger.update_stats(
+                    positions_evaluated=self.positions_evaluated,
+                    positions_skipped=self.skips,
+                    alpha_prunes=self.alpha_prunes,
+                    beta_prunes=self.beta_prunes,
+                    score=value
+                )
+                
         if value == float('inf'):
             if self.debug:
                 print(f"{'\t'*(cur_depth + 1)}No moves at depth {cur_depth}, returning constant time evaluation")
