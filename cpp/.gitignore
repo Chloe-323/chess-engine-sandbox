@@ -1,0 +1,144 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Build directories
+build/
+bin/
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# IDE specific files
+.vs/
+.vscode/
+.idea/
+*.user
+*.sln
+*.vcxproj*
+*.vcproj
+*.sln
+*.vcxproj.filters
+*.opensdf
+*.sdf
+*.suo
+*.tlog/
+*.log
+*.idb
+*.pdb
+*.ilk
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+*.VC.VC.db
+
+# Windows Installer files
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Windows shortcuts
+*.lnk
+
+# Local development settings
+.env
+.env.local
+
+# Logs
+*.log
+
+# Executable output directory
+bin/
+
+# Temporary files
+*.swp
+*~
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Visual Studio Code specific
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# CLion specific
+.idea/
+cmake-build-*/
+*.iml
+
+# Visual Studio specific
+.vs/
+*.VC.db
+*.VC.opendb
+*.VC.VC.db
+*.VC.VC.opendb
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build output directories
+out/
+build-*/
+
+# Files that are not mine
+chess.hpp
+
+# Build artifacts
+*.recipe
+*.obj.enc
+*.lock

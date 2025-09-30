@@ -1,6 +1,23 @@
-# Chess Engine with Pygame GUI
+# Chess Engine (C++ Backend with Web Frontend)
 
-A chess game featuring a Pygame-based graphical interface and a simple AI opponent. Built with Python and the `python-chess` library.
+A high-performance chess engine with a web-based frontend. The engine is being rewritten in C++ for better performance, as the Python implementation was limited to ~2k nodes per second, while I'm targeting ~1 million nodes per second for strong play.
+
+## Current Status (September 2024)
+
+### Backend (C++)
+- The core engine is being rewritten in C++ using the `chess.hpp` library
+- Basic board representation and move generation are implemented
+- The engine can be tested via the command line using `manager.cpp`
+- **Note**: The current terminal display is basic due to Windows Terminal's unicode limitations. Proper display would require Windows API integration, which is currently on hold.
+
+### Frontend (React/TypeScript)
+- Web-based interface using React and TypeScript
+- Uses `react-chessboard` for the chess UI
+- WebSocket connection is in progress but currently disabled due to rendering issues
+- Will connect to the C++ backend via WebSockets when complete
+
+### Python Implementation (Legacy)
+The original Python implementation with Pygame is still available in the repository but is no longer the main focus of development.
 
 ## Features
 - Play against an AI opponent
@@ -13,6 +30,17 @@ A chess game featuring a Pygame-based graphical interface and a simple AI oppone
 - Game state information in console
 
 ## Requirements
+
+### For C++ Backend
+- C++17 or later
+- CMake (for building)
+- Windows (current implementation is Windows-specific due to terminal handling)
+
+### For Web Frontend (WIP)
+- Node.js 16+
+- npm or yarn
+
+### For Python Implementation (Legacy)
 - Python 3
 - Pygame
 - python-chess
@@ -30,20 +58,50 @@ cd chess-engine-sandbox
 pip install pygame python-chess
 ```
 
-## Running the Game
+## Building and Running
 
-To start the game with the Pygame GUI:
+### C++ Backend
+1. Build the project using CMake:
+   ```bash
+   mkdir -p build && cd build
+   cmake ..
+   cmake --build .
+   ```
+2. Run the engine:
+   ```bash
+   .\manager
+   ```
+
+### Web Frontend (WIP)
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+### Python Implementation (Legacy)
 ```bash
 python chess_gui.py
 ```
 
-By default, you play as White and the AI plays as Black. The AI will automatically make its move after you make yours.
+## Current Limitations
 
-## Controls
-- **Left-click**: Select a piece and make a move
-- **Right-click**: Deselect the current piece
-- **Ctrl+F**: Flip the board
-- **Close the window**: Exit the game
+### C++ Backend
+- Terminal display is basic due to Windows Terminal unicode limitations
+- Windows API integration for better display is pending (conflicts with chess.hpp)
+- WebSocket server for frontend communication is not yet implemented
+
+### Web Frontend
+- WebSocket connection is currently disabled due to rendering issues
+- Board display works when WebSocket code is removed
+- Will be fully implemented after backend WebSocket server is ready
 
 ## Adding Piece Images
 For the best experience, you can add chess piece images to an `images` folder in the project directory. The expected filenames are:
