@@ -1,3 +1,6 @@
 [submodule "cpp/chess-library"]
 	path = cpp/chess-library
 	url = https://github.com/Disservin/chess-library.git
+[submodule "cpp/uWebSockets"]
+	path = cpp/uWebSockets
+	url = https://github.com/uNetworking/uWebSockets.git

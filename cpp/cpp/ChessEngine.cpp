@@ -7,7 +7,6 @@ ChessEngine::ChessEngine(chess::Board* board, int depth, int beamWidth) {
 }
 
 ChessEngine::~ChessEngine() {
-    delete this->currentState;
 }
 
 void ChessEngine::makeMove(chess::Move move) {
