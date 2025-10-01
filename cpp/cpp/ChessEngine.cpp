@@ -15,12 +15,23 @@ void ChessEngine::makeMove(chess::Move move) {
 
 chess::Move ChessEngine::getBestMove() {
     std::mt19937 gen(std::random_device{}()); 
-    chess::Movelist legalMoves;
-    chess::movegen::legalmoves(legalMoves, *this->currentState);
+    chess::Movelist legalMoves = this->calculateLegalMoves(this->currentState);
     std::uniform_int_distribution<> dis(0, legalMoves.size() - 1);
     return legalMoves[dis(gen)];
 }
 
 float ChessEngine::evaluate(chess::Board* position) {
     return 0;
+}
+
+bool ChessEngine::isLegalMove(chess::Move move, chess::Board* position) {
+    if (position == nullptr) position = this->currentState;
+    chess::Movelist legalMoves = this->calculateLegalMoves(position);
+    return std::find(legalMoves.begin(), legalMoves.end(), move) != legalMoves.end();
+}
+
+chess::Movelist ChessEngine::calculateLegalMoves(chess::Board* position) {
+    chess::Movelist toReturn;
+    chess::movegen::legalmoves(toReturn, *position);
+    return toReturn;
 }

@@ -9,6 +9,8 @@
 #define SQUARE_SIZE (BOARD_SIZE / 8)
 #define LIGHT_SQUARE_COLOR sf::Color(211, 225, 224)
 #define DARK_SQUARE_COLOR sf::Color(107,153,152)
+#define LIGHT_SELECTED_SQUARE_COLOR sf::Color(24, 222, 209)
+#define DARK_SELECTED_SQUARE_COLOR sf::Color(4, 224, 199)
 
 class Piece {
 public:
@@ -21,6 +23,27 @@ public:
 		filename += this->isWhite ? "w" : "b";
 		filename += toupper(type);
 		filename += ".png";
+
+		switch (toupper(type)) {
+		case 'P':
+			this->pieceType = chess::PieceType::PAWN;
+			break;
+		case 'N':
+			this->pieceType = chess::PieceType::KNIGHT;
+			break;
+		case 'B':
+			this->pieceType = chess::PieceType::BISHOP;
+			break;
+		case 'R':
+			this->pieceType = chess::PieceType::ROOK;
+			break;
+		case 'Q':
+			this->pieceType = chess::PieceType::QUEEN;
+			break;
+		case 'K':
+			this->pieceType = chess::PieceType::KING;
+			break;
+		}
 
 		if (!texture->loadFromFile(filename)) {
 			return;
@@ -51,15 +74,22 @@ private:
 	sf::Texture *texture;
 	char type;
 	bool isWhite;
+	chess::PieceType pieceType;
 	int x, y;
 };
 
 struct square {
-	sf::RectangleShape *sq;
+	sf::RectangleShape* sq; //Graphical representation of the square
 	Piece* currentPiece;
+	chess::Square chessSq; //square for the chess library
 };
 
-void getRepr(std::string fen, char repr[8][8]) {
+void getRepr(std::string fen, char repr[8][8], bool playingWhite) {
+	for (int i = 0; i < 8; ++i) {
+		for (int j = 0; j < 8; ++j) {
+			repr[i][j] = ' ';
+		}
+	}
 	int row = 0;
 	int col = 0;
 	for (char c : fen) {
@@ -74,7 +104,7 @@ void getRepr(std::string fen, char repr[8][8]) {
 			break;
 		}
 		else {
-			repr[row][col] = c;
+			repr[playingWhite ? row : 7 - row][playingWhite ? col : 7 - col] = c;
 			col++;
 		}
 	}
@@ -96,18 +126,22 @@ void consolePrintRepr(char repr[8][8]) {
 	std::cout << "\033[27m" << std::endl;
 }
 
-void getBoardGraphicalRepresentation(char repr[8][8], square squares[8][8], bool playingWhite) {
+void getBoardGraphicalRepresentation(char repr[8][8], square squares[8][8], bool playingWhite, square *selectedSquare) {
 	for (int i = 0; i < 8; i++) {
 		for (int j = 0; j < 8; j++) {
+
+
+			squares[i][j].chessSq = chess::Square(chess::File(playingWhite ? j : 7 - j), chess::Rank(playingWhite ? 7 - i : i));
+
 			if (squares[i][j].sq == nullptr) {
 				squares[i][j].sq = new sf::RectangleShape({ SQUARE_SIZE, SQUARE_SIZE });
 				squares[i][j].sq->setPosition({ float(j * SQUARE_SIZE), float(i * SQUARE_SIZE) });
-				if ((i + j) % 2 == 0) {
-					squares[i][j].sq->setFillColor(LIGHT_SQUARE_COLOR);
-				}
-				else {
-					squares[i][j].sq->setFillColor(DARK_SQUARE_COLOR);
-				}
+			}
+			if ((i + j) % 2 == 0) {
+				squares[i][j].sq->setFillColor(selectedSquare == &squares[i][j] ? LIGHT_SELECTED_SQUARE_COLOR : LIGHT_SQUARE_COLOR);
+			}
+			else {
+				squares[i][j].sq->setFillColor(selectedSquare == &squares[i][j] ? DARK_SELECTED_SQUARE_COLOR : DARK_SQUARE_COLOR);
 			}
 			if (squares[i][j].currentPiece != nullptr) {
 				delete squares[i][j].currentPiece;
@@ -153,7 +187,9 @@ int main() {
 		{{nullptr, nullptr}, {nullptr, nullptr}, {nullptr, nullptr}, {nullptr, nullptr}, {nullptr, nullptr}, {nullptr, nullptr}, {nullptr, nullptr}, {nullptr, nullptr}}, 
 		{{nullptr, nullptr}, {nullptr, nullptr}, {nullptr, nullptr}, {nullptr, nullptr}, {nullptr, nullptr}, {nullptr, nullptr}, {nullptr, nullptr}, {nullptr, nullptr}} 
 	};
-	getRepr(fen, repr);
+	getRepr(fen, repr, playingWhite);
+
+	square *selectedSquare = nullptr;
 
 
 	while (window.isOpen())
@@ -162,15 +198,42 @@ int main() {
 		{
 			if (event->is<sf::Event::Closed>())
 				window.close();
+			if (event->is<sf::Event::MouseButtonPressed>()) {
+				if (event->getIf<sf::Event::MouseButtonPressed>()->button == sf::Mouse::Button::Left) {
+					square *newSquare = &squares[
+							event->getIf<sf::Event::MouseButtonPressed>()->position.y / SQUARE_SIZE][
+							event->getIf<sf::Event::MouseButtonPressed>()->position.x / SQUARE_SIZE
+						];
+
+					if (selectedSquare != nullptr && selectedSquare->currentPiece != nullptr) {
+						chess::Move move = chess::Move::make(selectedSquare->chessSq, newSquare->chessSq);
+						if (engine.isLegalMove(move)) {
+							engine.makeMove(move);
+							fen = board.getFen();
+							getRepr(fen, repr, playingWhite);
+							continue;
+						}
+						else {
+							selectedSquare = newSquare;
+						}
+					}
+					selectedSquare = newSquare;
+					
+				}
+				else {
+					selectedSquare = nullptr;
+				}
+			}
 		}
 
 		window.clear();
 		
-		getBoardGraphicalRepresentation(repr, squares, playingWhite);
+		getBoardGraphicalRepresentation(repr, squares, playingWhite, selectedSquare);
 		// Draw the board
 		for (int i = 0; i < 8; i++) {
 			for (int j = 0; j < 8; j++) {
 				window.draw(*squares[j][i].sq);
+
 				if (squares[j][i].currentPiece != nullptr) {
 					squares[j][i].currentPiece->draw(window);
 				}
