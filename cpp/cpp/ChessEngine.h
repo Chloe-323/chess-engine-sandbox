@@ -2,6 +2,11 @@
 #include <random>
 #include <algorithm>
 
+struct searchNode {
+    float score;
+    chess::Move move;
+};
+
 class ChessEngine {
     public:
         ChessEngine(chess::Board* board, int depth, int beamWidth);
@@ -15,6 +20,12 @@ class ChessEngine {
         bool isLegalMove(chess::Move move, chess::Board* position = nullptr);
     private:
         chess::Movelist calculateLegalMoves(chess::Board* position);
+
+        float constantTimeEvaluate(chess::Board* position);
+        searchNode alphaBetaSearch();
+        searchNode bestMoveForWhite(int curDepth, float alpha = -INFINITY, float beta = INFINITY);
+        searchNode bestMoveForBlack(int curDepth, float alpha = -INFINITY, float beta = INFINITY);
+
         chess::Board* currentState;
         int depth;
         int beamWidth;

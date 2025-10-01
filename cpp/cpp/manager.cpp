@@ -84,6 +84,12 @@ struct square {
 	chess::Square chessSq; //square for the chess library
 };
 
+enum GameState {
+	WAITING_FOR_PLAYER_MOVE,
+	WAITING_FOR_ENGINE_MOVE,
+	ENGINE_PLAYED_MOVE,
+};
+
 void getRepr(std::string fen, char repr[8][8], bool playingWhite) {
 	for (int i = 0; i < 8; ++i) {
 		for (int j = 0; j < 8; ++j) {
@@ -191,6 +197,7 @@ int main() {
 
 	square *selectedSquare = nullptr;
 
+	GameState gameState = playingWhite ? WAITING_FOR_PLAYER_MOVE : WAITING_FOR_ENGINE_MOVE;
 
 	while (window.isOpen())
 	{
@@ -205,12 +212,13 @@ int main() {
 							event->getIf<sf::Event::MouseButtonPressed>()->position.x / SQUARE_SIZE
 						];
 
-					if (selectedSquare != nullptr && selectedSquare->currentPiece != nullptr) {
+					if (gameState == WAITING_FOR_PLAYER_MOVE && selectedSquare != nullptr && selectedSquare->currentPiece != nullptr) {
 						chess::Move move = chess::Move::make(selectedSquare->chessSq, newSquare->chessSq);
 						if (engine.isLegalMove(move)) {
 							engine.makeMove(move);
 							fen = board.getFen();
 							getRepr(fen, repr, playingWhite);
+							gameState = WAITING_FOR_ENGINE_MOVE;
 							continue;
 						}
 						else {
@@ -241,6 +249,15 @@ int main() {
 		}
 
 		window.display();
+		if (gameState == WAITING_FOR_ENGINE_MOVE) {
+			engine.makeMove(engine.getBestMove());
+			fen = board.getFen();
+			getRepr(fen, repr, playingWhite);
+			gameState = ENGINE_PLAYED_MOVE;
+		}
+		else if (gameState == ENGINE_PLAYED_MOVE) {
+			gameState = WAITING_FOR_PLAYER_MOVE;
+		}
 	}
 
 	for (int i = 0; i < 8; i++) {
