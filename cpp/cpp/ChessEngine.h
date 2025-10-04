@@ -31,10 +31,15 @@ class ChessEngine {
 
         int16_t constantTimeEvaluate(chess::Board* position, chess::Movelist* legalMoves = nullptr);
         int16_t countMaterial(chess::Board* position);
-        int16_t countRelativeMaterial(chess::Board* position);
         int16_t countPositionalControl(chess::Board* position);
-        int16_t countPieceActivity(chess::Board* position);
         int16_t countPawnStructure(chess::Board* position);
+
+
+        //Implemented but unused
+        int16_t countRelativeMaterial(chess::Board* position);
+        int16_t countPieceMobility(chess::Board* position);
+
+        //Not yet implemented
         int16_t countKingSafety(chess::Board* position);
 
 
