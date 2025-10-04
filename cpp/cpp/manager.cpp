@@ -69,6 +69,8 @@ public:
     void draw(sf::RenderWindow& window) {
         window.draw(*this->object);
     }
+
+	chess::PieceType getPieceType() { return this->pieceType; }
 private:
 	sf::RectangleShape *object;
 	sf::Texture *texture;
@@ -84,7 +86,7 @@ struct square {
 	chess::Square chessSq; //square for the chess library
 };
 
-enum GameState {
+enum ManagerState {
 	WAITING_FOR_PLAYER_MOVE,
 	WAITING_FOR_ENGINE_MOVE,
 	ENGINE_PLAYED_MOVE,
@@ -165,8 +167,8 @@ void getBoardGraphicalRepresentation(char repr[8][8], square squares[8][8], bool
 }
 
 int main() {
-	chess::Board board = chess::Board();
-	ChessEngine engine(&board, 2, 2);
+	chess::Board board = chess::Board(); 
+	ChessEngine engine(&board, 6, 12);
 	sf::RenderWindow window(sf::VideoMode({ BOARD_SIZE, BOARD_SIZE }), "Chess");
 	window.setFramerateLimit(30);
 	bool playingWhite = true;
@@ -197,7 +199,7 @@ int main() {
 
 	square *selectedSquare = nullptr;
 
-	GameState gameState = playingWhite ? WAITING_FOR_PLAYER_MOVE : WAITING_FOR_ENGINE_MOVE;
+	ManagerState managerState = playingWhite == (board.sideToMove() == chess::Color::WHITE) ? WAITING_FOR_PLAYER_MOVE : WAITING_FOR_ENGINE_MOVE;
 
 	while (window.isOpen())
 	{
@@ -212,13 +214,31 @@ int main() {
 							event->getIf<sf::Event::MouseButtonPressed>()->position.x / SQUARE_SIZE
 						];
 
-					if (gameState == WAITING_FOR_PLAYER_MOVE && selectedSquare != nullptr && selectedSquare->currentPiece != nullptr) {
-						chess::Move move = chess::Move::make(selectedSquare->chessSq, newSquare->chessSq);
+					if (managerState == WAITING_FOR_PLAYER_MOVE && selectedSquare != nullptr && selectedSquare->currentPiece != nullptr) {
+						chess::Move move;
+
+						// Check if this is a castling move (king moves two squares)
+						if (selectedSquare->currentPiece->getPieceType() == chess::PieceType::KING &&
+							std::abs(static_cast<int>(newSquare->chessSq.file()) - static_cast<int>(selectedSquare->chessSq.file())) == 2) {
+							// Determine if it's kingside or queenside castling
+							bool isKingside = (newSquare->chessSq.file() > selectedSquare->chessSq.file());
+							move = chess::uci::parseSan(board, isKingside ? "O-O" : "O-O-O");
+						}
+						// Handle pawn promotion
+						else if (selectedSquare->currentPiece->getPieceType() == chess::PieceType::PAWN && 
+							chess::Square::back_rank(newSquare->chessSq, playingWhite ? chess::Color::WHITE : chess::Color::BLACK)) {
+							move = chess::Move::make(selectedSquare->chessSq, newSquare->chessSq, chess::PieceType::QUEEN);
+						}
+						else {
+							move = chess::Move::make(selectedSquare->chessSq, newSquare->chessSq);
+						}
+
 						if (engine.isLegalMove(move)) {
 							engine.makeMove(move);
 							fen = board.getFen();
 							getRepr(fen, repr, playingWhite);
-							gameState = WAITING_FOR_ENGINE_MOVE;
+							managerState = WAITING_FOR_ENGINE_MOVE;
+							selectedSquare = nullptr;
 							continue;
 						}
 						else {
@@ -249,14 +269,21 @@ int main() {
 		}
 
 		window.display();
-		if (gameState == WAITING_FOR_ENGINE_MOVE) {
-			engine.makeMove(engine.getBestMove());
+		if (managerState == WAITING_FOR_ENGINE_MOVE) {
+			//TODO: make this on a separate thread.
+			chess::Move move = engine.getBestMove();
+			std::cout << chess::uci::moveToSan(board, move) << std::endl;
+			engine.makeMove(move);
 			fen = board.getFen();
 			getRepr(fen, repr, playingWhite);
-			gameState = ENGINE_PLAYED_MOVE;
+			std::cout << "\n\n";
+			consolePrintRepr(repr);
+			std::cout << "\n\n";
+			managerState = ENGINE_PLAYED_MOVE;
+			selectedSquare = nullptr;
 		}
-		else if (gameState == ENGINE_PLAYED_MOVE) {
-			gameState = WAITING_FOR_PLAYER_MOVE;
+		else if (managerState == ENGINE_PLAYED_MOVE) {
+			managerState = WAITING_FOR_PLAYER_MOVE;
 		}
 	}
 
