@@ -4,6 +4,7 @@
 #include <SFML/Graphics.hpp>
 #include <map>
 #include <memory>
+#include <chrono>
 
 #define BOARD_SIZE 800
 #define SQUARE_SIZE (BOARD_SIZE / 8)
@@ -271,9 +272,13 @@ int main() {
 		window.display();
 		if (managerState == WAITING_FOR_ENGINE_MOVE) {
 			//TODO: make this on a separate thread.
+			auto start = std::chrono::high_resolution_clock::now();
 			chess::Move move = engine.getBestMove();
 			std::cout << chess::uci::moveToSan(board, move) << std::endl;
 			engine.makeMove(move);
+			auto end = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double> duration = end - start; // Duration in milliseconds
+			std::cout << "Execution time: " << duration.count() << " s" << std::endl;
 			fen = board.getFen();
 			getRepr(fen, repr, playingWhite);
 			std::cout << "\n\n";

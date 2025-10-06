@@ -1,49 +1,23 @@
-#include "ChessEngine.h"
+#include "GameTree.h"
 
-ChessEngine::ChessEngine(chess::Board* board, int depth, int beamWidth) {
-    this->depth = depth;
-    this->beamWidth = beamWidth;
-    this->currentState = board;
-    this->debug = false;
-    std::random_device rd;
-    this->gen = std::mt19937(rd());
+GameTreeNode::GameTreeNode(chess::PackedBoard position, int16_t score) {
+	this->position = position;
+	this->score = score;
 }
 
-ChessEngine::~ChessEngine() {
+void GameTreeNode::destroy(GameTreeNode* goldenChild) {
+	//delete all our children except for the golden child
+	//eventually, we will look ourselves up to ensure that all our parents were destroyed as well
+	for (GameTreeNode* child : children) {
+		if (child != goldenChild) {
+			child->destroy(nullptr);
+		}
+	}
+	delete this;
 }
 
-void ChessEngine::makeMove(chess::Move move) {
-    this->currentState->makeMove(move);
-}
 
-chess::Move ChessEngine::getBestMove() {
-    auto toReturn = alphaBetaSearch();
-    return toReturn;
-}
-
-int16_t ChessEngine::evaluate(chess::Board* position) {
-    if (position == nullptr) position = this->currentState;
-    return 0;
-}
-
-bool ChessEngine::isLegalMove(chess::Move move, chess::Board* position) {
-    if (position == nullptr) position = this->currentState;
-    chess::Movelist legalMoves = this->calculateLegalMoves(position);
-    return std::find(legalMoves.begin(), legalMoves.end(), move) != legalMoves.end();
-}
-
-chess::Movelist ChessEngine::calculateLegalMoves(chess::Board* position) {
-    if (position == nullptr) position = this->currentState;
-    chess::Movelist toReturn;
-    chess::movegen::legalmoves(toReturn, *position);
-    return toReturn;
-}
-
-int16_t ChessEngine::constantTimeEvaluate(chess::Board* position, chess::Movelist* legalMoves ) {
-    if (legalMoves == nullptr) {
-        chess::Movelist moves = calculateLegalMoves(position);
-        legalMoves = &moves;
-    }
+int16_t GameTreeNode::constantTimeEvaluate(chess::Movelist* legalMoves) { 
     switch (getGameState(position, legalMoves)) {
     case STILL_PLAYING:
         break;
@@ -59,14 +33,14 @@ int16_t ChessEngine::constantTimeEvaluate(chess::Board* position, chess::Movelis
     return result;
 }
 
-chess::Move ChessEngine::alphaBetaSearch() {
+GameTreeNode* GameTreeNode::alphaBetaSearch() {
     if (this->currentState->sideToMove() == chess::Color::WHITE) {
         return this->bestMoveForWhite(this->currentState);
     }
     return this->bestMoveForBlack(this->currentState);
 }
 
-chess::Move ChessEngine::bestMoveForWhite(chess::Board* position, int curDepth, int16_t alpha, int16_t beta) {
+chess::Move GameTreeNode::bestMoveForWhite(chess::Board* position, int curDepth, int16_t alpha, int16_t beta) {
     chess::Movelist legalMoves = calculateLegalMoves(position);
     chess::Move toReturn = chess::Move();
     toReturn.setScore(-0x7fff);
@@ -117,7 +91,7 @@ chess::Move ChessEngine::bestMoveForWhite(chess::Board* position, int curDepth, 
     return toReturn;
 }
 
-chess::Move ChessEngine::bestMoveForBlack(chess::Board* position, int curDepth, int16_t alpha, int16_t beta) {
+chess::Move GameTreeNode::bestMoveForBlack(chess::Board* position, int curDepth, int16_t alpha, int16_t beta) {
     chess::Movelist legalMoves = calculateLegalMoves(position);
     chess::Move toReturn = chess::Move();
     toReturn.setScore(0x7fff);
@@ -166,7 +140,7 @@ chess::Move ChessEngine::bestMoveForBlack(chess::Board* position, int curDepth, 
     return toReturn;
 }
 
-GameState ChessEngine::getGameState(chess::Board* position, chess::Movelist* legalMoves) {
+GameState GameTreeNode::getGameState(chess::Board* position, chess::Movelist* legalMoves) {
     if (position->isInsufficientMaterial()) return DRAW;
     if (position->isRepetition()) return DRAW;
     if (position->isHalfMoveDraw() || legalMoves->empty()) {
@@ -177,14 +151,14 @@ GameState ChessEngine::getGameState(chess::Board* position, chess::Movelist* leg
 }
 
 
-int16_t ChessEngine::countMaterial(chess::Board* position) {
+int16_t GameTreeNode::countMaterial(chess::Board* position) {
     int16_t total = 0;
-    for (std::pair < chess::PieceType, int16_t> piece : { 
-        std::pair{chess::PieceType::PAWN, 1}, 
-        std::pair{chess::PieceType::BISHOP, 3}, 
+    for (std::pair < chess::PieceType, int16_t> piece : {
+        std::pair{chess::PieceType::PAWN, 1},
+        std::pair{chess::PieceType::BISHOP, 3},
         std::pair{chess::PieceType::KNIGHT, 3},
-        std::pair{chess::PieceType::ROOK, 5}, 
-        std::pair{chess::PieceType::QUEEN,9} 
+        std::pair{chess::PieceType::ROOK, 5},
+        std::pair{chess::PieceType::QUEEN,9}
         }) {
         total += (position->pieces(piece.first, chess::Color::WHITE).count()) * piece.second;
         total -= (position->pieces(piece.first, chess::Color::BLACK).count()) * piece.second;
@@ -192,7 +166,7 @@ int16_t ChessEngine::countMaterial(chess::Board* position) {
     return total;
 }
 
-int16_t ChessEngine::countRelativeMaterial(chess::Board* position) {
+int16_t GameTreeNode::countRelativeMaterial(chess::Board* position) {
     int16_t total = 0;
     int16_t difference = 0;
     for (int i = 0; i < 8; i++) {
@@ -254,12 +228,12 @@ int16_t ChessEngine::countRelativeMaterial(chess::Board* position) {
     return (difference << 15) / total; //TODO: maybe a cheaper operation?
 }
 
-int16_t ChessEngine::countPositionalControl(chess::Board* position) {
+int16_t GameTreeNode::countPositionalControl(chess::Board* position) {
     int16_t positionalControl = 0;
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
             chess::Square square = chess::Square(chess::File(i), chess::Rank(j));
-            int16_t squareValue = ChessEngine::squareValueLookupTable[i][j];
+            int16_t squareValue = GameTreeNode::squareValueLookupTable[i][j];
             chess::Bitboard blackAttackers = chess::attacks::attackers(*position, chess::Color::BLACK, square);
             positionalControl -= blackAttackers.count() * squareValue;
             chess::Bitboard whiteAttackers = chess::attacks::attackers(*position, chess::Color::WHITE, square);
@@ -269,7 +243,7 @@ int16_t ChessEngine::countPositionalControl(chess::Board* position) {
     return positionalControl;
 }
 
-int16_t ChessEngine::countPieceMobility(chess::Board* position) {
+int16_t GameTreeNode::countPieceMobility(chess::Board* position) {
     int16_t pieceMobility = 0;
     for (chess::Color color : {chess::Color::WHITE, chess::Color::BLACK}) {
 
@@ -308,14 +282,14 @@ int16_t ChessEngine::countPieceMobility(chess::Board* position) {
                     pieceMobility -= attackFunc(chess::Square(sqIndex), occupied).count();
                 }
             }
-        };
+            };
         handleSlidingPiece(chess::PieceType::BISHOP, chess::attacks::bishop);
         handleSlidingPiece(chess::PieceType::ROOK, chess::attacks::rook);
         handleSlidingPiece(chess::PieceType::QUEEN, chess::attacks::queen);
     }
     return pieceMobility;
 }
-int16_t ChessEngine::countPawnStructure(chess::Board* position) {
+int16_t GameTreeNode::countPawnStructure(chess::Board* position) {
     chess::Bitboard whitePawns = position->pieces(chess::PieceType::PAWN, chess::Color::WHITE);
     chess::Bitboard blackPawns = position->pieces(chess::PieceType::PAWN, chess::Color::BLACK);
 
@@ -363,7 +337,7 @@ int16_t ChessEngine::countPawnStructure(chess::Board* position) {
         0x8000000000000000, // h8
     };
 
-    constexpr std::array<chess::Bitboard, 15> antiDiagonalMasks {    
+    constexpr std::array<chess::Bitboard, 15> antiDiagonalMasks{
         0x0000000000000080, // h1
         0x0000000000008040, // h2 - g1
         0x0000000000804020, // h3 - g2 - f1
@@ -409,14 +383,14 @@ int16_t ChessEngine::countPawnStructure(chess::Board* position) {
     }
     return (2 << longestWhitePawnChainLength) - (2 << longestBlackPawnChainLength);
 }
-int16_t ChessEngine::countKingSafety(chess::Board* position) {
+int16_t GameTreeNode::countKingSafety(chess::Board* position) {
     //# of checks. carries between sub-branches. figure out how the math looks for that.
     //# of pieces pinned to the king.
     //
     return 0;
 }
 
-const int16_t ChessEngine::squareValueLookupTable[8][8] = {
+const int16_t GameTreeNode::squareValueLookupTable[8][8] = {
     {2, 2, 2, 2, 2, 2, 2, 2},
     {2, 2, 2, 2, 2, 2, 2, 2},
     {2, 2, 3, 3, 3, 3, 2, 2},
